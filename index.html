@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+  >
+
+  <title>Cripto-Scanner Sasha</title>
+
+  <!-- Motore grafico A-Frame -->
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+
+  <!-- Riconoscimento immagini MindAR -->
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #000;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    /* Interfaccia sopra la fotocamera */
+    #interface {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    #instruction {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      right: 20px;
+      padding: 14px 18px;
+      border: 1px solid #c8a84e;
+      background: rgba(0, 0, 0, 0.82);
+      color: #d8b85c;
+      text-align: center;
+      font-size: 16px;
+      letter-spacing: 1px;
+    }
+
+    /* Finestra che compare dopo il riconoscimento */
+    #recognition-modal {
+      display: none;
+      position: absolute;
+      inset: 0;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(0, 0, 0, 0.7);
+      pointer-events: auto;
+    }
+
+    #modal-box {
+      width: min(420px, 100%);
+      padding: 28px 22px;
+      border: 1px solid #c8a84e;
+      background: rgba(5, 5, 5, 0.96);
+      color: #d8b85c;
+      text-align: center;
+      box-shadow: 0 0 35px rgba(200, 168, 78, 0.22);
+    }
+
+    #modal-symbol {
+      margin-bottom: 16px;
+      font-size: 34px;
+    }
+
+    #modal-title {
+      margin: 0 0 12px;
+      font-size: 22px;
+      letter-spacing: 2px;
+    }
+
+    #modal-text {
+      margin: 0 0 22px;
+      color: #f0e4bd;
+      line-height: 1.5;
+    }
+
+    #close-modal {
+      width: 100%;
+      padding: 13px;
+      border: 1px solid #c8a84e;
+      background: transparent;
+      color: #d8b85c;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    #close-modal:active {
+      background: #c8a84e;
+      color: #000;
+    }
+
+    #status {
+      position: absolute;
+      right: 20px;
+      bottom: 20px;
+      left: 20px;
+      color: rgba(255, 255, 255, 0.8);
+      text-align: center;
+      font-size: 13px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="interface">
+
+    <div id="instruction">
+      INQUADRA IL SIGILLO
+    </div>
+
+    <div id="status">
+      Mantieni il simbolo interamente visibile.
+    </div>
+
+    <div id="recognition-modal">
+      <div id="modal-box">
+
+        <div id="modal-symbol">✦</div>
+
+        <h1 id="modal-title">
+          SIGILLO RICONOSCIUTO
+        </h1>
+
+        <p id="modal-text">
+          Sasha ha rilevato la tua presenza.
+          Il collegamento è attivo.
+        </p>
+
+        <button id="close-modal" type="button">
+          CONTINUA
+        </button>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Scena con fotocamera e riconoscimento -->
+  <a-scene
+    mindar-image="
+      imageTargetSrc: ./sasha-target.mind;
+      autoStart: true;
+      uiLoading: yes;
+      uiScanning: no;
+      uiError: yes;
+    "
+    color-space="sRGB"
+    renderer="
+      colorManagement: true;
+      physicallyCorrectLights: true;
+      antialias: true;
+      alpha: true;
+    "
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false"
+    embedded
+  >
+
+    <a-assets>
+      <img
+        id="sasha-symbol"
+        src="./sasha-simbolo.png"
+        alt=""
+      >
+    </a-assets>
+
+    <a-camera
+      position="0 0 0"
+      look-controls="enabled: false"
+    ></a-camera>
+
+    <!-- targetIndex 0 indica la prima immagine compilata -->
+    <a-entity
+      id="sasha-target"
+      mindar-image-target="targetIndex: 0"
+    >
+
+      <!-- Effetto dorato semitrasparente sopra il simbolo -->
+      <a-image
+        src="#sasha-symbol"
+        position="0 0 0"
+        width="1"
+        height="1"
+        material="
+          transparent: true;
+          opacity: 0.22;
+        "
+      ></a-image>
+
+    </a-entity>
+
+  </a-scene>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const target = document.querySelector("#sasha-target");
+      const modal = document.querySelector("#recognition-modal");
+      const instruction = document.querySelector("#instruction");
+      const status = document.querySelector("#status");
+      const closeButton = document.querySelector("#close-modal");
+
+      let modalAlreadyShown = false;
+
+      target.addEventListener("targetFound", () => {
+        instruction.textContent = "SIGILLO RICONOSCIUTO";
+        status.textContent = "Collegamento stabilito.";
+
+        if (!modalAlreadyShown) {
+          modal.style.display = "flex";
+          modalAlreadyShown = true;
+        }
+      });
+
+      target.addEventListener("targetLost", () => {
+        instruction.textContent = "INQUADRA NUOVAMENTE IL SIGILLO";
+        status.textContent = "Il collegamento è stato interrotto.";
+      });
+
+      closeButton.addEventListener("click", () => {
+        modal.style.display = "none";
+        instruction.textContent = "TEST COMPLETATO";
+        status.textContent = "Il riconoscimento funziona correttamente.";
+      });
+    });
+  </script>
+
+</body>
+</html>
